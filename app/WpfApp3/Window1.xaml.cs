@@ -26,8 +26,8 @@ namespace WpfApp3
         class RowForList : INotifyPropertyChanged
         {
             private object data;
-            private object currentData;
-         public object CurrentData
+            private RowToBox currentData;
+         public RowToBox CurrentData
             {
                 get
                 {
@@ -40,7 +40,7 @@ namespace WpfApp3
                 }
             }
        public bool isFK { get; set; }
-            public MainWindow.Fk Fk;
+            DataTable ds;
             public object Data
             {
                 get
@@ -53,55 +53,86 @@ namespace WpfApp3
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("data"));
                 }
             }
+          public List<RowToBox> RowData { get; set; }
+     
             public string Name { get; set; }
        public RowForList(object data, string name, bool IsFk) { isFK = IsFk; this.data = data; Name = name; }
-            public RowForList(MainWindow.Fk fk, string name, bool IsFk,object dat)
+            public RowForList(DataTable d, string name, bool IsFk,object dat)
             { 
-                Fk = fk; isFK = IsFk;  data = Fk.data; Name = name; int x; 
-                if(fk.id.Length!=0)
-                { if (dat.GetType()==1.GetType()) 
-                    { x = Convert.ToInt32(dat); } 
-                    else { x = fk.id[0]; }  
-                    for (int i = 0; i < fk.id.Length; i++) 
-                    { if (fk.id[i] == x) { currentData = (object)fk.data[i]; break; } 
+                 isFK = IsFk; ds = d; Name = name; RowData = new List<RowToBox>(); foreach(DataRow r in ds.Rows)
+                { 
+                    RowData.Add(new RowToBox(r));
+                    if (dat.GetType() !=typeof( DBNull))
+                    {
+                        if ((int)dat == (int)r[0])
+                        {
+                            currentData = RowData.Last<RowToBox>();
+                        }
                     }
                 }
-                else
-                {
-                    currentData = null;
-                }
+                
+          
+          
             }
             public event PropertyChangedEventHandler PropertyChanged;
         }
+        public class RowToBox
+        {
+            DataRow Row;
+            public RowToBox(DataRow row)
+            {
+                Row = row;
+            }
+            public override string ToString()
+            {
+               return Row[1].ToString();
+            }
+            public int ToInt()
+            {
+                return (int)Row[0];
+            }
+        }
        ObservableCollection<RowForList> colls =new ObservableCollection<RowForList>();
         MainWindow main;
-        public Window1(DataRow row, List<DataGridColumn> coll,MainWindow main, List<MainWindow.Fk> fks)
+        DataColumnCollection col;
+        int fkCount;
+        public Window1(DataRow row, DataColumnCollection coll,MainWindow main, List<MainWindow.Fk> fks)
         {
             this.main = main;
             InitializeComponent();
+            col = coll;
             data = row;
-            bool isFk = false ;
+            bool isFk;
+            fkCount = fks.Count;
             MainWindow.Fk FK=null;
-      for(int i =0;i< data.ItemArray.Length; i++)
+      for(int i =0;i< data.ItemArray.Length - fkCount; i++)
             {
-                isFk=false;
-                   foreach (MainWindow.Fk fk in fks)
-                   { 
-                           if (fk.name == coll[i].Header.ToString())
-                           {
-                               FK = fk;
-                               isFk = true;
-                           }
+              //  test.Text +=" "+ data.ItemArray[i].ToString();
+                if (coll[i].ColumnName.ToString() == "id")
+                {
+                    continue;
+                }
+                else
+                {
+                    isFk = false;
+                    foreach (MainWindow.Fk fk in fks)
+                    {
+                        if (fk.name == coll[i].ColumnName.ToString())
+                        {
+                            FK = fk;
+                            isFk = true;
+                        }
 
-                   }
-                   if (!isFk)
-                   {
-                       colls.Add(new RowForList(data.ItemArray[i], coll[i].Header.ToString(), isFk));
-                   }
-                   else
-                   {
-                       colls.Add(new RowForList(FK, coll[i].Header.ToString(), isFk, data.ItemArray[i]));
-                   }
+                    }
+                    if (!isFk)
+                    {
+                        colls.Add(new RowForList(data.ItemArray[i], coll[i].ColumnName.ToString(), isFk));
+                    }
+                    else
+                    {
+                        colls.Add(new RowForList(FK.ds, coll[i].ColumnName.ToString(), isFk, data.ItemArray[i]));
+                    }
+                }
        
             }
         
@@ -112,24 +143,31 @@ namespace WpfApp3
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             object[] newdata = new object[data.ItemArray.Length];
-            test.Text += colls[1].Data.ToString();
-            for (int i = 0; i < data.ItemArray.Length; i++)
+      
+            for (int i = 0; i < data.ItemArray.Length - fkCount; i++)
             {
-                if (colls[i].isFK) { 
-                    
-                    for(int j = 0; j< colls[i].Fk.data.Length;j++)
-                    {
-                        if (colls[i].CurrentData.ToString() == colls[i].Fk.data[j])
-                        {
-                            newdata[i] = colls[i].Fk.id[j];
-                        }
-                    }
+                if (col[i].ColumnName.ToString() == "id")
+                {
+                    continue;
                 }
                 else
                 {
-                    newdata[i] = colls[i].Data;
+                     if (colls[i].isFK) { 
+
+                         for(int j = 0;j< colls[i].RowData.Count;j++)
+                         {
+                             if (colls[i].CurrentData.ToInt() == colls[i].RowData[j].ToInt())
+                             {
+                                 newdata[i] = colls[i].CurrentData.ToInt();
+                             }
+                         }
+                     }
+                     else
+                     {
+                         newdata[i] = colls[i].Data;
+                     }
                 }
-            }
+                }
             data.ItemArray = newdata;
             test.Text += data.ItemArray[1].ToString();
             main.dataUpdate(data);
