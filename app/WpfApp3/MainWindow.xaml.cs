@@ -24,76 +24,56 @@ namespace WpfApp3
     /// </summary>
     public partial class MainWindow : Window
     {
-
- public class Fk
-        {
-           public string name;
-            public int[] id;
-            public string[] data;
-            
-            public Fk(string title)
-            {
-                name = title;
-            }
-            public void PutData(int[] id, string[] names)
-            {
-                data = names;
-                this.id = id;
-            }
-        }
         class MyTable
         {
             string connectionString = "Host=localhost;Port=5432;Username=postgres;Password=1234;Database=Sklad";
             private DataSet ds = new DataSet();
-
-            List<Fk> FKs = new List<Fk>();
-            public List<Fk> GetFks() => FKs;
             NpgsqlDataAdapter da;
             NpgsqlConnection con;
          public   string Title { get; private set; }
      
             public  MyTable(string title)
             {
-                List<int> ids = new List<int>();
-                List<string> names = new List<string>();
+   
      
                 con = new NpgsqlConnection(connectionString);
                 con.Open();
 
                 string sql = ("SELECT * FROM "+title);
                 da = new NpgsqlDataAdapter(sql, con);
+                ds.Reset();
+                da.Fill(ds,"main");
+
+                NpgsqlDataAdapter da2;
+                List<string> names = new List<string>();
+                List<string> cols = new List<string>();
                 var dataSource = NpgsqlDataSource.Create(connectionString);
                 using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('"+title+"');"))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                           ids.Clear();
-                           names.Clear();
-                           Fk fk = new Fk(reader.GetString(0));
-                             
-                        using (var cmd2 = dataSource.CreateCommand("select id,name from " + reader.GetString(1)))
-                        using (var reader2 = cmd2.ExecuteReader())
-                        {
-                            while (reader2.Read())
-                            {
 
-                               ids.Add(reader2.GetInt32(0));
-                                names.Add(reader2.GetString(1)); 
-                            }
-                        }
-                       fk.PutData(ids.ToArray(), names.ToArray());
-                        FKs.Add(fk); 
-
-
+                        cols.Add(reader.GetString(0));
+                    names.Add( reader.GetString(1));
+                        string s = names.Last<string>();
+                        string sql2 =("select id,name from " + s);
+                        da2 = new NpgsqlDataAdapter(sql2, con);
+                        da2.Fill(ds, s);
                     }
                 }
-                ds.Reset();
-                da.Fill(ds);
+                ForeignKeyConstraint fk;
+               for (int i = 0; i < names.Count; i++)
+                {
+                    fk = new ForeignKeyConstraint(ds.Tables[names[i]].Columns["id"], ds.Tables[0].Columns[cols[i]]);
+                    fk.DeleteRule = Rule.None;
+                    ds.Tables[0].Constraints.Add(fk);
+                }
                 NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
                 da.UpdateCommand = cb.GetUpdateCommand(true);
                 da.DeleteCommand = cb.GetDeleteCommand(true);
                 da.InsertCommand = cb.GetInsertCommand(true);
+
                 Title = title;
               
          
@@ -120,6 +100,7 @@ namespace WpfApp3
 
             }
             public DataTable GetData() => ds.Tables[0];
+            public int GetTableCount() => ds.Tables.Count;
            public void Save()
             {
                 da.Update(ds);
@@ -165,9 +146,9 @@ namespace WpfApp3
             if (dataGrid.SelectedItem != null)
             {
                 oldRow = ((DataRowView)dataGrid.SelectedItem).Row;
-                Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>(),this,currentTable.GetFks());
+             //   Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>());
       
-                window.Show();
+               // window.Show();
             }
         }
         DataRow oldRow;
@@ -185,8 +166,8 @@ namespace WpfApp3
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             oldRow = currentTable.AddData();
-                Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>(), this,currentTable.GetFks());
-                window.Show();
+             //   Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>());
+            //    window.Show();
             
         }
     }
