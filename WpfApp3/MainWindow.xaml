@@ -19,7 +19,7 @@
 
         </Grid.ColumnDefinitions>
 
-        <DataGrid  Name="dataGrid" Grid.Column="1" IsReadOnly="True" MouseDoubleClick="dataGrid_MouseDoubleClick" SelectionChanged="dataGrid_SelectionChanged" AutoGenerateColumns="False">
+        <DataGrid  Name="dataGrid" Grid.Column="1" IsReadOnly="True" MouseDoubleClick="dataGrid_MouseDoubleClick" SelectionChanged="dataGrid_SelectionChanged">
         
         </DataGrid>
         <TreeView SelectedItemChanged="TreeView_SelectedItemChanged" Name="tree">

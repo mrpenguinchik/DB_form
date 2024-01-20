@@ -16,7 +16,7 @@
         <DataTemplate x:Key="comboBoxTemp">
             <StackPanel Margin="5">
                 <TextBlock Text="{Binding Path=Name}" Width="100" Height="20"></TextBlock>
-                <ComboBox ItemsSource="{Binding Path=RowData}" SelectedItem="{Binding Path=CurrentData, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="20"></ComboBox>
+                <ComboBox ItemsSource="{Binding Path=Data, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding Path=CurrentData, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="20"></ComboBox>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="checker">

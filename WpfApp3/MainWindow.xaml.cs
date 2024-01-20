@@ -28,15 +28,17 @@ namespace WpfApp3
  public class Fk
         {
            public string name;
-           public DataTable ds { get; private set; }
+            public int[] id;
+            public string[] data;
             
             public Fk(string title)
             {
                 name = title;
             }
-            public void PutData(DataTable newDs)
+            public void PutData(int[] id, string[] names)
             {
-                ds = newDs;
+                data = names;
+                this.id = id;
             }
         }
         class MyTable
@@ -48,61 +50,54 @@ namespace WpfApp3
             public List<Fk> GetFks() => FKs;
             NpgsqlDataAdapter da;
             NpgsqlConnection con;
-            DataSet ds2;
          public   string Title { get; private set; }
      
             public  MyTable(string title)
             {
-             
+                List<int> ids = new List<int>();
+                List<string> names = new List<string>();
      
                 con = new NpgsqlConnection(connectionString);
                 con.Open();
 
                 string sql = ("SELECT * FROM "+title);
                 da = new NpgsqlDataAdapter(sql, con);
-                NpgsqlDataAdapter da2;
-                ds.Reset();
-                da.Fill(ds,"main");
-                NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
-                da.UpdateCommand = cb.GetUpdateCommand(true);
-                da.DeleteCommand = cb.GetDeleteCommand(true);
-                da.InsertCommand = cb.GetInsertCommand(true);
                 var dataSource = NpgsqlDataSource.Create(connectionString);
                 using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('"+title+"');"))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                       
+                           ids.Clear();
+                           names.Clear();
                            Fk fk = new Fk(reader.GetString(0));
+                             
+                        using (var cmd2 = dataSource.CreateCommand("select id,name from " + reader.GetString(1)))
+                        using (var reader2 = cmd2.ExecuteReader())
+                        {
+                            while (reader2.Read())
+                            {
 
-                        string sql2 = ("select id,name from " + reader.GetString(1));
-            da2 = new NpgsqlDataAdapter(sql2, con);
-                        da2.Fill(ds,reader.GetString(1));
-                        fk.PutData(ds.Tables[reader.GetString(1)]);
+                               ids.Add(reader2.GetInt32(0));
+                                names.Add(reader2.GetString(1)); 
+                            }
+                        }
+                       fk.PutData(ids.ToArray(), names.ToArray());
                         FKs.Add(fk); 
 
 
                     }
                 }
-                
-                for(int i = 0; i < FKs.Count; i++)
-                {
-                    DataRelation fk = new DataRelation(FKs[i].name,ds.Tables[i+1].Columns["id"],ds.Tables[0].Columns[FKs[i].name],true);
-                    ds.Tables[0].ParentRelations.Add(fk);
-                    DataColumn col=new DataColumn();
-                    string s = FKs[i].name.Trim("_id".ToCharArray());
-                    col.ColumnName = s;
-                    col.DataType ="a".GetType();
-                    ds.Tables[0].Columns.Add(col);
-                     ds.Tables[0].Columns[s].Expression = "Parent(["+ FKs[i].name + "]).name";
-                  
-                }
+                ds.Reset();
+                da.Fill(ds);
+                NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
+                da.UpdateCommand = cb.GetUpdateCommand(true);
+                da.DeleteCommand = cb.GetDeleteCommand(true);
+                da.InsertCommand = cb.GetInsertCommand(true);
                 Title = title;
-      
+              
          
             }
-            public ConstraintCollection GetConstraint() => ds.Tables[0].Constraints;
             public void CreateFkCols()
             {
               
@@ -127,16 +122,11 @@ namespace WpfApp3
             public DataTable GetData() => ds.Tables[0];
            public void Save()
             {
-                da.Update(ds,"main");
+                da.Update(ds);
             }
             public void Update(DataRow data,DataRow find)
             {
-                int x = ds.Tables[0].Rows.IndexOf(find);
-           
-                for(int i = 0; i < data.ItemArray.Length-FKs.Count;i++)
-                {
-                    ds.Tables[0].Rows[x].ItemArray[i] = data.ItemArray[i];
-                }
+                ds.Tables[0].Rows[ds.Tables[0].Rows.IndexOf(find)].ItemArray = data.ItemArray;
             }
             public DataRow AddData()
             {
@@ -163,33 +153,19 @@ namespace WpfApp3
 
             if (((TreeViewItem)(tree.SelectedItem)).Tag!=null) {
                 currentTable = new MyTable(((TreeViewItem)(tree.SelectedItem)).Tag.ToString());
-                DataGridUpdate();
+                dataGrid.ItemsSource = currentTable.GetData().DefaultView;
+                
             }
           
 
         }
-        public void DataGridUpdate()
-        {
-            dataGrid.Columns.Clear();
-            dataGrid.ItemsSource = currentTable.GetData().DefaultView;
 
-          foreach (DataColumn c in currentTable.GetData().Columns)
-            {
-                if (!c.ColumnName.ToString().Contains("id")) {
-                    string label = c.ColumnName.ToString();
-                    DataGridTextColumn column = new DataGridTextColumn();
-                    column.Header = label;
-                    column.Binding = new Binding(label.Replace(' ', '_'));
-                    dataGrid.Columns.Add(column);
-                }
-            } 
-         }
         private void dataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (dataGrid.SelectedItem != null)
-            { 
-                oldRow =((DataRowView)dataGrid.SelectedItem).Row;
-                Window1 window = new Window1(oldRow, currentTable.GetData().Columns, this,currentTable.GetFks());
+            {
+                oldRow = ((DataRowView)dataGrid.SelectedItem).Row;
+                Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>(),this,currentTable.GetFks());
       
                 window.Show();
             }
@@ -209,7 +185,7 @@ namespace WpfApp3
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             oldRow = currentTable.AddData();
-                Window1 window = new Window1(oldRow, currentTable.GetData().Columns, this,currentTable.GetFks());
+                Window1 window = new Window1(oldRow, dataGrid.Columns.ToList<DataGridColumn>(), this,currentTable.GetFks());
                 window.Show();
             
         }
