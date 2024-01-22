@@ -60,6 +60,10 @@ namespace WpfApp3
                 NpgsqlDataAdapter da2;
                 var dataSource = NpgsqlDataSource.Create(connectionString);
                 string sql = "SELECT ";  //* FROM "+title);
+                string updateComm="";
+                string delComm = "";
+                string createComm = "INSERT INTO movies ( ";
+                  string values= "VALUES(";
                 string join="";
                 using (var cmd = dataSource.CreateCommand("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME =N'" + title + "';"))
                 using (var reader = cmd.ExecuteReader())
@@ -68,8 +72,14 @@ namespace WpfApp3
                     {
 
                         sql += title+"."+ reader.GetString(0)+",";
+                        createComm += reader.GetString(0) + ",";
+                        values += "@" + reader.GetString(0) + ",";
                     }
                 }
+                createComm = createComm.TrimEnd(',');
+                values = values.TrimEnd(',');
+createComm += ")"+values+ ");";
+
                 using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('" + title + "');"))
                 using (var reader = cmd.ExecuteReader())
                 {
@@ -95,9 +105,9 @@ namespace WpfApp3
                 ds.Reset();
                 da.Fill(ds,"main");
                 NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
-                da.UpdateCommand = cb.GetUpdateCommand(true);
+                da.UpdateCommand = new NpgsqlCommand("");
                 da.DeleteCommand = cb.GetDeleteCommand(true);
-                da.InsertCommand = cb.GetInsertCommand(true);
+                da.InsertCommand = new NpgsqlCommand(createComm);
                
               
                /* for(int i = 0; i < FKs.Count; i++)
