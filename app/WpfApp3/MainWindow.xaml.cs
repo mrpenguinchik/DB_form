@@ -57,36 +57,50 @@ namespace WpfApp3
      
                 con = new NpgsqlConnection(connectionString);
                 con.Open();
-
-                string sql = ("SELECT * FROM "+title);
-                da = new NpgsqlDataAdapter(sql, con);
                 NpgsqlDataAdapter da2;
+                var dataSource = NpgsqlDataSource.Create(connectionString);
+                string sql = "SELECT ";  //* FROM "+title);
+                string join="";
+                using (var cmd = dataSource.CreateCommand("SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME =N'" + title + "';"))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+
+                        sql += title+"."+ reader.GetString(0)+",";
+                    }
+                }
+                using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('" + title + "');"))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        sql += reader.GetString(1)+".name as "+reader.GetString(1).TrimEnd("_id".ToCharArray())+",";
+                        join += " INNER JOIN " + reader.GetString(1) + " ON "+title+"."+reader.GetString(0)+" = " + reader.GetString(1) + ".id";
+                      /*  Fk fk = new Fk(reader.GetString(0));
+
+                        string sql2 = ("select id,name from " + reader.GetString(1));
+                        da2 = new NpgsqlDataAdapter(sql2, con);
+                        da2.Fill(ds, reader.GetString(1));
+                        fk.PutData(ds.Tables[reader.GetString(1)]);
+                        FKs.Add(fk);*/
+
+
+                    }
+                }
+                sql = sql.TrimEnd(',');
+                sql += " from " + title;
+                sql = sql + join;
+                da = new NpgsqlDataAdapter(sql, con);
                 ds.Reset();
                 da.Fill(ds,"main");
                 NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
                 da.UpdateCommand = cb.GetUpdateCommand(true);
                 da.DeleteCommand = cb.GetDeleteCommand(true);
                 da.InsertCommand = cb.GetInsertCommand(true);
-                var dataSource = NpgsqlDataSource.Create(connectionString);
-                using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('"+title+"');"))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                       
-                           Fk fk = new Fk(reader.GetString(0));
-
-                        string sql2 = ("select id,name from " + reader.GetString(1));
-            da2 = new NpgsqlDataAdapter(sql2, con);
-                        da2.Fill(ds,reader.GetString(1));
-                        fk.PutData(ds.Tables[reader.GetString(1)]);
-                        FKs.Add(fk); 
-
-
-                    }
-                }
-                
-                for(int i = 0; i < FKs.Count; i++)
+               
+              
+               /* for(int i = 0; i < FKs.Count; i++)
                 {
                     DataRelation fk = new DataRelation(FKs[i].name,ds.Tables[i+1].Columns["id"],ds.Tables[0].Columns[FKs[i].name],true);
                     ds.Tables[0].ParentRelations.Add(fk);
@@ -97,7 +111,7 @@ namespace WpfApp3
                     ds.Tables[0].Columns.Add(col);
                      ds.Tables[0].Columns[s].Expression = "Parent(["+ FKs[i].name + "]).name";
                   
-                }
+                }*/
                 Title = title;
       
          
