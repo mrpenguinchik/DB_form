@@ -4,25 +4,82 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp3"
-        xmlns:dataGrid2D="http://gu.se/DataGrid2D"
 
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" Name="MainWin">
-    <Grid>
+    <Window.Resources>
+        <DataTemplate x:Key="checkBoxTemp">
+            <StackPanel Margin="5">
+                <TextBlock Text="{Binding name}" Width="100" Height="20"/>
+                <CheckBox IsChecked="{Binding Data, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="25"/>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="textBoxTemp">
+        <StackPanel Margin="5">
+            <TextBlock Text="{Binding name}" Width="100" Height="25"  />
+
+            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="25"  />
+
+        </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="checker">
+        <ContentPresenter x:Name="schemaContentPresenter"
+       ContentTemplate="{StaticResource textBoxTemp}"
+        />
+        <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding type}" Value="1">
+                    <Setter TargetName="schemaContentPresenter" Property="ContentTemplate" Value="{StaticResource textBoxTemp}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding type}" Value="2">
+                    <Setter TargetName="schemaContentPresenter" Property="ContentTemplate" Value="{StaticResource textBoxTemp}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding type}" Value="3">
+                <Setter TargetName="schemaContentPresenter" Property="ContentTemplate" Value="{StaticResource checkBoxTemp}" />
+            </DataTrigger>
+          
+        </DataTemplate.Triggers>
+    </DataTemplate>
+    </Window.Resources>
+    <Grid x:Name="gridd">
+ 
         <Grid.RowDefinitions>
-            <RowDefinition Height="375*"></RowDefinition>
-            <RowDefinition Height="44*"></RowDefinition>
+            <RowDefinition Height="25*"></RowDefinition>
+            <RowDefinition Height="150*"></RowDefinition>
+            <RowDefinition Height="36*"></RowDefinition>
+            <RowDefinition Height="29*"></RowDefinition>
+            <RowDefinition Height="36*"></RowDefinition>
+            <RowDefinition Height="20*"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="15*"></ColumnDefinition>
-            <ColumnDefinition Width="73*"></ColumnDefinition>
 
+            <ColumnDefinition Width="181*"></ColumnDefinition>
+            <ColumnDefinition Width="212*"></ColumnDefinition>
+            <ColumnDefinition Width="209*"></ColumnDefinition>
+            <ColumnDefinition Width="190*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
+        <Popup x:Name="popup1" StaysOpen="True" Placement="Mouse" MaxWidth="180"
+         AllowsTransparency="True" Grid.Column="1"    >
+            <Grid Height="44" Width="127" Background="LightPink">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="99*"></ColumnDefinition>
+                    <ColumnDefinition Width="28*"></ColumnDefinition>
 
-        <DataGrid  Name="dataGrid" Grid.Column="1" IsReadOnly="True" MouseDoubleClick="dataGrid_MouseDoubleClick" SelectionChanged="dataGrid_SelectionChanged" AutoGenerateColumns="False">
-        
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="4*"></RowDefinition>
+                    <RowDefinition Height="7*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <TextBlock TextWrapping="Wrap"  Opacity="0.8" Grid.RowSpan="2" Margin="0,5,0,0" >
+         Этот объект удален. Открыть?
+                </TextBlock>
+                <Button Background="Red" Content="X"  Grid.Column="1" Name="popupclose" Click="popupclose_Click"></Button>
+                <Button Background="Green" Content="Да" Name="popupopen" Margin="0,10,0,0" Grid.Row="1" Grid.Column="1" Click="popupopen_Click" />
+            </Grid>
+        </Popup>
+        <DataGrid  Name="dataGrid" Grid.Column="1" Grid.Row="1" Grid.RowSpan="4" Grid.ColumnSpan="3" IsReadOnly="True" MouseDoubleClick="dataGrid_MouseDoubleClick" SelectionChanged="dataGrid_SelectionChanged" AutoGenerateColumns="False">
+
         </DataGrid>
-        <TreeView SelectedItemChanged="TreeView_SelectedItemChanged" Name="tree">
+        <TreeView SelectedItemChanged="TreeView_SelectedItemChanged" Name="tree" Grid.Row="1">
             <TreeViewItem Header="справочники" FontSize="14" >
                 <TreeViewItem Header="материалы" FontSize="14" >
                     <TreeViewItem Header="единицы" FontSize="14" Tag="units">
@@ -51,14 +108,58 @@
                     </TreeViewItem>
                     <TreeViewItem Header="типы документов" FontSize="14" Tag="documenttypes">
                     </TreeViewItem>
+                    <TreeViewItem Header="контракты" FontSize="14" Tag="contracts">
+                    </TreeViewItem>
                 </TreeViewItem>
             </TreeViewItem>
         </TreeView>
-        <Button Content="Добавить" Grid.Column="1" HorizontalAlignment="Left" Margin="141,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
-        <Button Content="Удалить" Grid.Column="1" HorizontalAlignment="Left" Margin="254,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="75"/>
-        <Button Content="Сохранить" Grid.Column="1" HorizontalAlignment="Left" Margin="363,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="75" Name="Save" Click="Save_Click"/>
-        <TextBlock HorizontalAlignment="Left" Margin="37,17,0,-117" Grid.Row="1" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" Name="test"/>
-       
+        <Button Grid.Column="1" Click="Add_Click" Grid.Row="5" Content="Добавить" />
+
+        <Button Content="Удалить" Grid.Column="3" Grid.Row="5"   Name="Delete" Click="Delete_Click" />
+        <Button Content="Сохранить" Grid.Column="2"  Grid.Row="5"  Name="Save" Click="Save_Click" />
+
+        <Button Content="Документы Прихода" Grid.Row="2" Name="arrival" Tag="1" Click="doc_Click"/>
+        <Button Content="Документы отгрузки" Grid.Row="3" Tag="2" Name="shipment"  Click="doc_Click"/>
+        <Button Content="Перемещения" Grid.Row="4" Tag="4" Name="moves"  Click="doc_Click" />
+        <Grid Grid.Column="1"  Grid.Row="2" Grid.RowSpan="3" Grid.ColumnSpan="3" Visibility="Collapsed" Name="grid2" >
+            <DataGrid Name="dataGrid1" Grid.Row="0" Grid.ColumnSpan="3" AutoGenerateColumns="False" MouseDoubleClick="dataGrid1_MouseDoubleClick" IsReadOnly="True"/>
+            <Button Grid.Column="0" Grid.Row="1" Content="Добавить" Name="addLine" Click="addLine_Click" />
+
+            <Button Content="Удалить" Grid.Column="1" Grid.Row="1" Name="delLine" Click="delLine_Click"  />
+            <Button Content="Сохранить" Grid.Column="2"  Grid.Row="1" Name="saveLine" Click="saveLine_Click" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44*">
+
+                </RowDefinition>
+                <RowDefinition Height="13*">
+
+                </RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition>
+
+                </ColumnDefinition>
+                <ColumnDefinition>
+
+                </ColumnDefinition>
+                <ColumnDefinition>
+
+                </ColumnDefinition>
+            </Grid.ColumnDefinitions>
+        </Grid>
+
+
+        <ListBox Grid.Column="0" Grid.ColumnSpan="4" ItemTemplate="{StaticResource checker}" Name="filterList">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal">
+
+                    </StackPanel>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+          
+        </ListBox>
+        <TextBox x:Name="test"  Grid.Row="5" />
 
     </Grid>
 </Window>
