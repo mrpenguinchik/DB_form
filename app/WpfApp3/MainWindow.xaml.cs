@@ -120,6 +120,12 @@ namespace WpfApp3
             List<Fk> FKs = new List<Fk>();
             public List<Fk> GetFks() => FKs;
             public List<Filter> filters = new List<Filter>();
+            public NpgsqlDataAdapter da;
+            NpgsqlConnection con;
+            string sql;
+            string addition = " ";
+            public string Title { get; private set; }
+
             public void updateData()
             {
                 con.Open();
@@ -135,7 +141,7 @@ namespace WpfApp3
                 {
                     if (filters[i].ToString() != " ")
                     {
-                        if (sql2.Length > addition.Length)
+                        if (sql2.Length > addition.Length || addition.Length>" where ".Length)
                         {
                             sql2 += " AND" + filters[i].ToString();
 
@@ -150,7 +156,7 @@ namespace WpfApp3
                 {
                     sql2 = " ";
                 }
-                test.Text = sql1 + sql2;
+              
            
                 da = new NpgsqlDataAdapter(sql1+sql2, con);
 
@@ -167,59 +173,31 @@ namespace WpfApp3
                 da.InsertCommand = cb.GetInsertCommand();
                 con.Close();
             }
-          public  NpgsqlDataAdapter da;
-            NpgsqlConnection con;
-            string sql;
-            string addition=" ";
-         public   string Title { get; private set; }
+    
   
-  
-                public MyTable(string title,int document_type)
+                public MyTable(string title,int document,bool isLines)
             {
-
-
-             
-               
                 Title = title;
                 sql = ("SELECT * FROM " + title);
-                if (document_type == -1) {
+                if (document == -1) {
              
                 }
                 else
                 {
 
-                   
+                    addition = " where type_id = " + document.ToString();
+                }
+                if (isLines)
+                {
+                    addition = " where document_id=" + document.ToString();
                 }
                 createTable(sql+addition);
                
             }
-                   public MyTable(string title,string doc)
+  
+            void create_fks()
             {
-
-
-       
-                Title = title;
-                sql = ("SELECT * FROM " + title );
-                addition =" where document_id=" + doc;
-                createTable(sql+addition);
-            
-            }
-            void createTable(string sql1)
-            {
-                con = new NpgsqlConnection(connectionString);
-                con.Open();
-                string sql=sql1;
-                da = new NpgsqlDataAdapter(sql, con);
                 NpgsqlDataAdapter da2;
-                ds.Reset();
-                da.Fill(ds, "main");
-                NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
-                da.UpdateCommand = cb.GetUpdateCommand();
-                da.DeleteCommand = cb.GetDeleteCommand();
-                da.InsertCommand = cb.GetInsertCommand();
-
-
-
                 var dataSource = NpgsqlDataSource.Create(connectionString);
                 using (var cmd = dataSource.CreateCommand("select coll,foreign_table_name from get_fks('" + Title + "');"))
                 using (var reader = cmd.ExecuteReader())
@@ -232,9 +210,9 @@ namespace WpfApp3
                         else
                         {
                             fk.target = "name";
-                           
+
                         }
-                        sql = ("select id, "+fk.target+" ,deleted from " + reader.GetString(1));
+                        sql = ("select id, " + fk.target + " ,deleted from " + reader.GetString(1));
                         da2 = new NpgsqlDataAdapter(sql, con);
                         da2.Fill(ds, reader.GetString(1));
                         fk.PutData(ds.Tables[reader.GetString(1)]);
@@ -246,28 +224,31 @@ namespace WpfApp3
                 }
 
 
-
-                ds.Tables[0].Columns["deleted"].DefaultValue = false;
-
-
+            }
+            void get_names()
+            {
+                NpgsqlDataAdapter da2;
                 sql = ("select column_name,description from get_desc('" + Title + "');");
                 da2 = new NpgsqlDataAdapter(sql, con);
                 da2.Fill(ds, "names");
 
+            }
+            void create_filters()
+            {
 
                 int type;
                 Type t;
                 string target;
-               foreach (DataRow row in ds.Tables["names"].Rows)
+                foreach (DataRow row in ds.Tables["names"].Rows)
                 {
                     t = ds.Tables[0].Columns[row[0].ToString()].DataType;
-                    if (t == typeof(string) )
+                    if (t == typeof(string))
                     {
                         type = 1;
                     }
                     else
                     {
-                        if(t == typeof(bool) )
+                        if (t == typeof(bool))
                         {
                             type = 3;
                         }
@@ -276,39 +257,38 @@ namespace WpfApp3
                             type = 2;
                         }
                     }
-                    target = Title+"."+ row[0].ToString();
-                   foreach(Fk fk in FKs)
+                    target = Title + "." + row[0].ToString();
+                    foreach (Fk fk in FKs)
                     {
-                        //test.Text += fk.name + " ";
-                        if (fk.name == target)
-                        {
                      
-                            target=fk.ds.TableName + "." + fk.target;
-                           
+                        if (fk.name == row[0].ToString())
+                        {
+                            type = 1;
+                            target = fk.ds.TableName + "." + fk.target;
+
                         }
                     }
-                    filters.Add(new Filter(row[1].ToString(),target,this,type));
+                    filters.Add(new Filter(row[1].ToString(), target, this, type));
                 }
-
-
                 sql = "SELECT ";
-                foreach(DataColumn c in ds.Tables[0].Columns)
+                foreach (DataColumn c in ds.Tables[0].Columns)
                 {
-                    sql +=" "+Title+"."+ c.ColumnName + " , ";
+                    sql += " " + Title + "." + c.ColumnName + " , ";
 
                 }
-                sql = sql.Remove(sql.Length - 2,2);
+                sql = sql.Remove(sql.Length - 2, 2);
                 sql += " ";
                 sql += " from " + Title;
-                foreach(Fk fk1 in FKs)
+                foreach (Fk fk1 in FKs)
                 {
-                    sql += " join "+fk1.ds.TableName+" on " + Title + "." + fk1.name + " = " + fk1.ds.TableName + "." + "id ";
+                    sql += " join " + fk1.ds.TableName + " on " + Title + "." + fk1.name + " = " + fk1.ds.TableName + "." + "id ";
                 }
-                sql = sql + addition;
-                this.sql= sql;
+                //sql = sql + addition;
+            
 
-
-
+            }
+            void create_subtitution()
+            {
                 for (int i = 0; i < FKs.Count; i++)
                 {
                     DataRelation fk = new DataRelation(FKs[i].name, ds.Tables[i + 1].Columns["id"], ds.Tables[0].Columns[FKs[i].name], true);
@@ -329,7 +309,30 @@ namespace WpfApp3
 
                 }
 
-                dataSource.Dispose();
+            }
+            void createTable(string sql1)
+            {
+                con = new NpgsqlConnection(connectionString);
+                con.Open();
+                string sql=sql1;
+                da = new NpgsqlDataAdapter(sql, con);
+               
+                ds.Reset();
+                da.Fill(ds, "main");
+                NpgsqlCommandBuilder cb = new NpgsqlCommandBuilder(da);
+                da.UpdateCommand = cb.GetUpdateCommand();
+                da.DeleteCommand = cb.GetDeleteCommand();
+                da.InsertCommand = cb.GetInsertCommand();
+                create_fks();
+                ds.Tables[0].Columns["deleted"].DefaultValue = false;
+                get_names();
+                create_filters();
+
+
+                create_subtitution();
+
+
+           
                 con.Close();
 
             }
@@ -371,6 +374,10 @@ namespace WpfApp3
             }
             
         }
+
+
+
+
       MyTable currentTable;
         public MainWindow()
         {
@@ -378,6 +385,8 @@ namespace WpfApp3
 
         
         }
+
+
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
@@ -388,7 +397,7 @@ namespace WpfApp3
         {
 
             if (((TreeViewItem)(tree.SelectedItem)).Tag!=null) {
-                currentTable = new MyTable(((TreeViewItem)(tree.SelectedItem)).Tag.ToString(),-1);
+                currentTable = new MyTable(((TreeViewItem)(tree.SelectedItem)).Tag.ToString(),-1,false);
                 currentDoc = -1;
                 IsDocument = false;
                 changeDataGrids();
@@ -399,11 +408,8 @@ namespace WpfApp3
         }
         public void DataGridUpdate(DataGrid dataGrid,MyTable currentTable)
         {
-            currentTable.test = test;
-            foreach(Fk fk in currentTable.GetFks())
-            {
-                test.Text += fk.name + " ";
-            }
+        
+         
             filterList.ItemsSource = currentTable.filters;
             dataGrid.Columns.Clear();
             dataGrid.ItemsSource = currentTable.GetData().DefaultView;
@@ -464,7 +470,7 @@ namespace WpfApp3
         { 
                 if (IsDocument && dataGrid.SelectedItems!=null)
             { 
-                docLines = new MyTable("documentlines",((DataRowView)dataGrid.SelectedItem).Row["id"].ToString());
+                docLines = new MyTable("documentlines",(int)((DataRowView)dataGrid.SelectedItem).Row["id"],true);
               //  test.Text = ((DataRowView)dataGrid.SelectedItem).Row["id"].ToString();
                 DataGridUpdate(dataGrid1, docLines);
             }
@@ -523,7 +529,7 @@ namespace WpfApp3
         private void doc_Click(object sender, RoutedEventArgs e)
         { 
             IsDocument = true;
-            currentTable = new MyTable("documents",Convert.ToInt32( ((Button)sender).Tag.ToString()));
+            currentTable = new MyTable("documents",Convert.ToInt32( ((Button)sender).Tag.ToString()),false);
         
             currentDoc = Convert.ToInt32(((Button)sender).Tag.ToString());
             changeDataGrids();

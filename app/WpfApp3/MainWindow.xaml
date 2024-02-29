@@ -11,14 +11,14 @@
         <DataTemplate x:Key="checkBoxTemp">
             <StackPanel Margin="5">
                 <TextBlock Text="{Binding name}" Width="100" Height="20"/>
-                <CheckBox IsChecked="{Binding Data, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="25"/>
+                <CheckBox IsChecked="{Binding Data, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="20"/>
             </StackPanel>
         </DataTemplate>
         <DataTemplate x:Key="textBoxTemp">
         <StackPanel Margin="5">
-            <TextBlock Text="{Binding name}" Width="100" Height="25"  />
+            <TextBlock Text="{Binding name}" Width="100" Height="20"  />
 
-            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="25"  />
+            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Width="100" Height="20"  />
 
         </StackPanel>
     </DataTemplate>
@@ -43,7 +43,7 @@
     <Grid x:Name="gridd">
  
         <Grid.RowDefinitions>
-            <RowDefinition Height="25*"></RowDefinition>
+            <RowDefinition Height="70"></RowDefinition>
             <RowDefinition Height="150*"></RowDefinition>
             <RowDefinition Height="36*"></RowDefinition>
             <RowDefinition Height="29*"></RowDefinition>
@@ -108,8 +108,7 @@
                     </TreeViewItem>
                     <TreeViewItem Header="типы документов" FontSize="14" Tag="documenttypes">
                     </TreeViewItem>
-                    <TreeViewItem Header="контракты" FontSize="14" Tag="contracts">
-                    </TreeViewItem>
+                    
                 </TreeViewItem>
             </TreeViewItem>
         </TreeView>
@@ -153,13 +152,9 @@
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal">
-
                     </StackPanel>
                 </ItemsPanelTemplate>
             </ListBox.ItemsPanel>
-          
         </ListBox>
-        <TextBox x:Name="test"  Grid.Row="5" />
-
     </Grid>
 </Window>

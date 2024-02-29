@@ -243,7 +243,7 @@ namespace WpfApp3
                 
                 }
             data.ItemArray = newdata;
-            test.Text += data.ItemArray[1].ToString();
+
             main.dataUpdate(data);
         }
     }

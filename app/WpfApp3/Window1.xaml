@@ -77,7 +77,7 @@
     
         <ListBox x:Name="List" ItemTemplate="{StaticResource checker}"/>
         <Button Content="Записать" HorizontalAlignment="Left" Margin="319,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="112" RenderTransformOrigin="-1.49,0.698" Height="62" IsCancel="True" Click="Button_Click"/>
-        <TextBlock HorizontalAlignment="Left" Margin="188,34,0,0" Grid.Row="1" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" x:Name="test"/>
+     
 
     </Grid>
 </Window>
